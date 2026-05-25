@@ -735,6 +735,7 @@ const btnTriggerJenkins = document.getElementById('btn-trigger-jenkins');
 const jenkinsConsoleLogs = document.getElementById('jenkins-console-logs');
 const jenkinsProgressBar = document.getElementById('jenkins-progress-bar');
 const jenkinsPipelineStatus = document.getElementById('jenkins-pipeline-status');
+let realPollingInterval = null;
 
 btnTriggerJenkins.addEventListener('click', async () => {
   if (jenkinsPipelineRunning) {
@@ -763,7 +764,6 @@ btnTriggerJenkins.addEventListener('click', async () => {
   jenkinsPipelineStatus.style.color = 'var(--color-warning)';
   jenkinsConsoleLogs.innerHTML = '[Jenkins Pipeline Agent] Contacting Jenkins orchestrator...<br>';
   
-  // 1. Call backend API to trigger real Jenkins build
   try {
     jenkinsConsoleLogs.innerHTML += '[Jenkins API] POST /api/jenkins/trigger - Connecting to http://localhost:8080...<br>';
     const response = await fetch(`${API_BASE_URL}/jenkins/trigger`, { method: 'POST' });
@@ -771,20 +771,124 @@ btnTriggerJenkins.addEventListener('click', async () => {
     
     if (response.ok) {
       jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-success)">[Jenkins API] Fired build trigger for "student dashboard" successfully!</span><br>`;
+      jenkinsConsoleLogs.innerHTML += `[Jenkins API] Streaming real-time console output from Jenkins server...<br>`;
       showToast("Real Jenkins Pipeline Build Triggered!", "success");
+      
+      // Start real polling
+      startRealLogsPolling();
     } else {
       jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Jenkins Server down or returned error: ${result.message || 'Details not available'}.</span><br>`;
-      jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running high-fidelity local build runner simulation fallback...<br>`;
+      jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running local build pipeline simulation fallback...<br>`;
+      // Fallback
+      jenkinsLogIndex = 0;
+      runNextPipelineStep();
     }
   } catch (err) {
     console.error("Jenkins trigger call failed:", err);
     jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Unreachable. local-mac-agent offline.</span><br>`;
     jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running local build pipeline simulation fallback...<br>`;
+    // Fallback
+    jenkinsLogIndex = 0;
+    runNextPipelineStep();
   }
-  
-  jenkinsLogIndex = 0;
-  runNextPipelineStep();
 });
+
+function startRealLogsPolling() {
+  if (realPollingInterval) clearInterval(realPollingInterval);
+  
+  let pollingAttempts = 0;
+  
+  realPollingInterval = setInterval(async () => {
+    try {
+      pollingAttempts++;
+      const res = await fetch(`${API_BASE_URL}/jenkins/logs`);
+      if (!res.ok) throw new Error("Failed to fetch logs");
+      
+      const data = await res.json();
+      
+      if (data.status === "WAITING" && pollingAttempts < 10) {
+        jenkinsConsoleLogs.innerHTML += `.`;
+        jenkinsConsoleLogs.scrollTop = jenkinsConsoleLogs.scrollHeight;
+        return;
+      }
+      
+      let logsHtml = data.logs || "";
+      
+      // Format console logs beautifully
+      logsHtml = logsHtml
+        .replace(/\n/g, '<br>')
+        .replace(/\[Pipeline\] /g, '<span style="color: #6366f1">[Pipeline] </span>')
+        .replace(/Finished: SUCCESS/g, '<span style="color: var(--color-success); font-weight: bold;">Finished: SUCCESS</span>')
+        .replace(/Finished: FAILURE/g, '<span style="color: var(--color-danger); font-weight: bold;">Finished: FAILURE</span>')
+        .replace(/ERROR:/g, '<span style="color: var(--color-danger)">ERROR:</span>');
+
+      jenkinsConsoleLogs.innerHTML = logsHtml;
+      jenkinsConsoleLogs.scrollTop = jenkinsConsoleLogs.scrollHeight;
+      
+      const logsLower = logsHtml.toLowerCase();
+      
+      // 1. Checkout Stage Complete
+      if (logsLower.includes('checkout source') || logsLower.includes('checkout scm') || logsLower.includes('checking out git') || logsLower.includes('code validation')) {
+        completeVisualizerStage('checkout', 25);
+      }
+      
+      // 2. Build Stage Complete
+      if (logsLower.includes('code validation') || logsLower.includes('npm ci') || logsLower.includes('docker compilation') || logsLower.includes('docker build')) {
+        completeVisualizerStage('checkout', 25);
+        completeVisualizerStage('build', 50);
+      }
+      
+      // 3. Compile Stage Complete
+      if (logsLower.includes('docker compilation') || logsLower.includes('docker build') || logsLower.includes('deploy to production')) {
+        completeVisualizerStage('checkout', 25);
+        completeVisualizerStage('build', 50);
+        completeVisualizerStage('compile', 75);
+      }
+      
+      // 4. Deploy Stage Complete
+      if (logsLower.includes('deploy to production') || logsLower.includes('finished: success')) {
+        completeVisualizerStage('checkout', 25);
+        completeVisualizerStage('build', 50);
+        completeVisualizerStage('compile', 75);
+        completeVisualizerStage('deploy', 100);
+      }
+
+      // Check if build is finished
+      if (data.status === "SUCCESS") {
+        clearInterval(realPollingInterval);
+        jenkinsPipelineRunning = false;
+        btnTriggerJenkins.disabled = false;
+        btnTriggerJenkins.style.opacity = '1';
+        jenkinsPipelineStatus.textContent = 'SUCCESS';
+        jenkinsPipelineStatus.style.color = 'var(--color-success)';
+        showToast("Real Jenkins Pipeline Build Succeeded!", "success");
+      } else if (data.status === "FAILED") {
+        clearInterval(realPollingInterval);
+        jenkinsPipelineRunning = false;
+        btnTriggerJenkins.disabled = false;
+        btnTriggerJenkins.style.opacity = '1';
+        jenkinsPipelineStatus.textContent = 'FAILED';
+        jenkinsPipelineStatus.style.color = 'var(--color-danger)';
+        showToast("Real Jenkins Pipeline Build Failed!", "error");
+      }
+    } catch (e) {
+      console.error("Logs polling failed:", e);
+    }
+  }, 1500);
+}
+
+function completeVisualizerStage(stageId, progressVal) {
+  const dot = document.getElementById(`dot-${stageId}`);
+  const label = document.getElementById(`label-${stageId}`);
+  if (dot && dot.innerHTML !== '✓') {
+    dot.style.backgroundColor = 'var(--color-success)';
+    dot.style.borderColor = 'var(--color-success)';
+    dot.style.color = 'white';
+    dot.innerHTML = '✓';
+    if (label) label.style.color = 'var(--color-success)';
+    jenkinsProgressBar.style.width = `${progressVal}%`;
+  }
+}
 
 function runNextPipelineStep() {
   if (jenkinsLogIndex >= pipelineLogs.length) return;
@@ -792,31 +896,20 @@ function runNextPipelineStep() {
   const step = pipelineLogs[jenkinsLogIndex];
   
   jenkinsTimer = setTimeout(() => {
-    // Append log line
     jenkinsConsoleLogs.innerHTML += step.text + '<br>';
     jenkinsConsoleLogs.scrollTop = jenkinsConsoleLogs.scrollHeight;
     
-    // Check if stage is completed
     if (step.completeStage) {
-      const dot = document.getElementById(`dot-${step.completeStage}`);
-      const label = document.getElementById(`label-${step.completeStage}`);
-      dot.style.backgroundColor = 'var(--color-success)';
-      dot.style.borderColor = 'var(--color-success)';
-      dot.style.color = 'white';
-      dot.innerHTML = '✓';
-      label.style.color = 'var(--color-success)';
-      
-      jenkinsProgressBar.style.width = `${step.progress}%`;
+      completeVisualizerStage(step.completeStage, step.progress);
     }
     
-    // Check if pipeline is completely finished
     if (step.pipelineFinished) {
       jenkinsPipelineRunning = false;
       btnTriggerJenkins.disabled = false;
       btnTriggerJenkins.style.opacity = '1';
       jenkinsPipelineStatus.textContent = 'SUCCESS';
       jenkinsPipelineStatus.style.color = 'var(--color-success)';
-      showToast("Jenkins build #12 successful!", "success");
+      showToast("Jenkins build simulated successfully!", "success");
     }
     
     jenkinsLogIndex++;

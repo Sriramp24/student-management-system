@@ -287,17 +287,21 @@ app.post('/api/jenkins/trigger', async (req, res) => {
           <name>*/master</name>
         </hudson.plugins.git.BranchSpec>
       </branches>
-      <scriptPath>Jenkinsfile</scriptPath>
-      <lightweight>true</lightweight>
-    </definition>
-    <triggers>
-      <hudson.triggers.SCMTrigger>
-        <spec>* * * * *</spec>
-        <ignorePostCommitHooks>false</ignorePostCommitHooks>
-      </hudson.triggers.SCMTrigger>
-    </triggers>
-    <disabled>false</disabled>
-  </flow-definition>`;
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="empty-list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>Jenkinsfile</scriptPath>
+    <lightweight>true</lightweight>
+  </definition>
+  <triggers>
+    <hudson.triggers.SCMTrigger>
+      <spec>* * * * *</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <disabled>false</disabled>
+</flow-definition>`;
 
     let jobCheck;
     try {
@@ -366,6 +370,46 @@ app.post('/api/jenkins/trigger', async (req, res) => {
     return res.status(500).json({ 
       status: "FAILED", 
       message: `Failed to trigger real Jenkins build: ${error.message}. Ensure Jenkins is active at http://localhost:8080.` 
+    });
+  }
+});
+
+// --- GET REAL JENKINS BUILD CONSOLE LOGS ---
+app.get('/api/jenkins/logs', async (req, res) => {
+  const jenkinsHost = process.env.NODE_ENV === 'production' ? 'host.docker.internal' : 'localhost';
+  const jenkinsBaseUrl = `http://${jenkinsHost}:8080`;
+  const encodedJobName = 'student%20dashboard';
+
+  try {
+    const logsRes = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/lastBuild/consoleText`);
+    
+    if (logsRes.status === 404) {
+      return res.json({ 
+        status: "WAITING", 
+        logs: "[Jenkins API] Build is initiating... Waiting for console output to be registered." 
+      });
+    }
+
+    if (!logsRes.ok) {
+      throw new Error(`Jenkins returned status code ${logsRes.status}`);
+    }
+
+    const logText = await logsRes.text();
+    
+    // Check if the build has completed by scanning for standard endings
+    let buildStatus = "RUNNING";
+    if (logText.includes("Finished: SUCCESS")) {
+      buildStatus = "SUCCESS";
+    } else if (logText.includes("Finished: FAILURE") || logText.includes("Finished: ABORTED")) {
+      buildStatus = "FAILED";
+    }
+
+    return res.json({ status: buildStatus, logs: logText });
+  } catch (error) {
+    console.error("Jenkins logs fetch error:", error.message);
+    return res.status(500).json({ 
+      status: "FAILED", 
+      message: `Failed to fetch logs: ${error.message}` 
     });
   }
 });
