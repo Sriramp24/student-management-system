@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduMetrics | Student Management & Analytics</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+  <meta name="description" content="EduMetrics is a modern, DevOps-ready student management and real-time monitoring analytics dashboard.">
+  
+  <!-- Theme script - inline to prevent FOUC (Flash of Unstyled Content) -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css?v=5">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+        </div>
+        <span class="brand-name">EduMetrics</span>
+      </div>
+      
+      <nav class="nav-menu">
+        <a href="#dashboard" class="nav-item active" id="nav-dashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="#students" class="nav-item" id="nav-students">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Students</span>
+        </a>
+        <a href="#devops" class="nav-item" id="nav-devops">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>DevOps Portal</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="pulse-dot green"></span>
+          <span class="status-text">Backend Connected</span>
+        </div>
+        <div class="footer-credit">v1.0.0 &bull; DevOps Demo</div>
+      </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top Navbar -->
+      <header class="top-navbar">
+        <div class="page-title">
+          <h1 id="current-page-title">Dashboard Overview</h1>
+          <p id="current-page-subtitle">Real-time academic insights and analysis</p>
+        </div>
+        <div class="navbar-actions">
+          <!-- Theme Toggle Button -->
+          <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme" title="Toggle Light/Dark Mode">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          
+          <!-- System Status Button -->
+          <div class="user-profile">
+            <div class="avatar">ADM</div>
+            <span class="user-name">Admin Portal</span>
+          </div>
+        </div>
+      </header>
+      
+      <!-- Content Container -->
+      <div class="content-body">
+        
+        <!-- SECTION: DASHBOARD -->
+        <section id="section-dashboard" class="content-section active-section">
+          <!-- Stats Summary Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon blue">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div class="stat-info">
+                <h3>Total Students</h3>
+                <p class="stat-value" id="stat-total-students">-</p>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div class="stat-info">
+                <h3>Avg. Attendance</h3>
+                <p class="stat-value" id="stat-avg-attendance">-</p>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon purple">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <div class="stat-info">
+                <h3>Avg. Marks</h3>
+                <p class="stat-value" id="stat-avg-marks">-</p>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon orange">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              </div>
+              <div class="stat-info">
+                <h3>Departments</h3>
+                <p class="stat-value" id="stat-total-departments">-</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Charts Section Grid -->
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-header">
+                <h2>Attendance Distribution</h2>
+                <span class="chart-subtitle">Students by attendance bracket</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="attendanceChart"></canvas>
+              </div>
+            </div>
+            
+            <div class="chart-card">
+              <div class="chart-header">
+                <h2>Students by Department</h2>
+                <span class="chart-subtitle">Enrollment ratio breakdown</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="departmentChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Advanced Insight Card -->
+            <div class="chart-card insights-card">
+              <div class="chart-header">
+                <h2>Academic Analytics</h2>
+                <span class="chart-subtitle">Dynamic performance highlights</span>
+              </div>
+              <div class="insights-body" style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
+                <div class="insight-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-hover); border-radius: 12px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 1.5rem;">🏆</div>
+                  <div>
+                    <div style="font-size: 0.7rem; color: var(--text-light); font-weight: 500;">TOP DEPARTMENT</div>
+                    <div style="font-weight: 700; font-size: 0.95rem;" id="insight-top-dept">Loading...</div>
+                  </div>
+                </div>
+                
+                <div class="insight-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-hover); border-radius: 12px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 1.5rem;">📅</div>
+                  <div>
+                    <div style="font-size: 0.7rem; color: var(--text-light); font-weight: 500;">ATTENDANCE LEADER</div>
+                    <div style="font-weight: 700; font-size: 0.95rem;" id="insight-top-attendance">Loading...</div>
+                  </div>
+                </div>
+                
+                <div class="insight-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-hover); border-radius: 12px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 1.5rem;">🌟</div>
+                  <div>
+                    <div style="font-size: 0.7rem; color: var(--text-light); font-weight: 500;">HIGH PERFORMERS (MARKS &gt; 85)</div>
+                    <div style="font-weight: 700; font-size: 0.95rem;" id="insight-achievers-count">Loading...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- SECTION: STUDENTS -->
+        <section id="section-students" class="content-section">
+          <!-- Control Panel -->
+          <div class="table-controls">
+            <div class="search-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="search-student" placeholder="Search by name or roll number...">
+            </div>
+            
+            <div class="filters">
+              <button class="secondary-btn" id="btn-export-csv" title="Export Registry to CSV" style="padding: 12px 14px; display: flex; align-items: center; gap: 6px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Export</span>
+              </button>
+              
+              <button class="secondary-btn" id="btn-mock-data" title="Inject Mock Demo Records" style="padding: 12px 14px; display: flex; align-items: center; gap: 6px; color: var(--brand-color); border-color: hsla(250, 84%, 54%, 0.3);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.886L5 9l4.886 1.912L12 17l1.912-5.886L19 9l-4.886-1.912z"/><path d="M5 3v4M3 5h4M19 17v4M17 19h4"/></svg>
+                <span>Mock Data</span>
+              </button>
+
+              <div class="select-wrapper">
+                <select id="filter-department">
+                  <option value="ALL">All Departments</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              
+              <button class="primary-btn" id="btn-add-student">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Student</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Student Table Wrapper -->
+          <div class="card table-card">
+            <div class="table-responsive">
+              <table class="data-table" id="students-table">
+                <thead>
+                  <tr>
+                    <th>Roll Number</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Marks</th>
+                    <th>Attendance</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="students-table-body">
+                  <!-- Dynamic Content -->
+                  <tr>
+                    <td colspan="6" class="text-center py-4">Loading student records...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-footer">
+              <span id="table-entries-count">Showing 0 of 0 entries</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- SECTION: DEVOPS PORTAL -->
+        <section id="section-devops" class="content-section">
+          <!-- DevOps Introduction -->
+          <div class="devops-intro-card">
+            <div class="devops-header">
+              <div class="badge">Production Environment</div>
+              <h2>Integrated DevOps Architecture</h2>
+              <p>This academic project displays enterprise-grade CI/CD and observability. The diagram below represents our current deployment structure, showcasing Prometheus scraping backend custom metrics, Grafana plotting visualizations, and Jenkins orchestrating code updates.</p>
+            </div>
+          </div>
+
+          <!-- DevOps Service Cards Grid -->
+          <div class="devops-grid">
+            <!-- Docker Card -->
+            <div class="devops-card" onclick="openDockerModal()" style="cursor: pointer;">
+              <div class="card-logo docker">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M13.983 11.078h2.119c.102 0 .186-.084.186-.186V8.774c0-.102-.084-.186-.186-.186h-2.119c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186m-2.95.078h2.118c.102 0 .185-.083.185-.186V8.852c0-.103-.083-.186-.185-.186H11.033c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m-2.95 0h2.118c.102 0 .185-.083.185-.186V8.852c0-.103-.083-.186-.185-.186H8.083c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m-2.95 0h2.119c.101 0 .185-.083.185-.186V8.852c0-.103-.084-.186-.185-.186H5.133c-.101 0-.185.083-.185.186v2.118c0 .103.084.186.185.186m2.95-2.949h2.118c.102 0 .185-.083.185-.186V5.903c0-.103-.083-.186-.185-.186H8.083c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m2.95 0h2.118c.102 0 .185-.083.185-.186V5.903c0-.103-.083-.186-.185-.186H11.033c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m2.95 0h2.119c.102 0 .186-.083.186-.186V5.903c0-.103-.084-.186-.186-.186h-2.119c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m-5.9 2.949h2.118c.102 0 .185-.083.185-.186V8.774c0-.102-.083-.186-.185-.186H11.033c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186m8.85 2.95h2.118c.102 0 .186-.084.186-.186V8.774c0-.102-.084-.186-.186-.186h-2.118c-.103 0-.186.084-.186.186v2.118c0 .102.083.186.186.186M23.99 12.11c-.03-.08-.106-.17-.183-.24a14.2 14.2 0 0 0-4.049-2.73 8.35 8.35 0 0 0-.256-.77c-.328-.8-.79-1.54-1.353-2.18l-.133-.15c-.244-.27-.478-.52-.656-.81l-.105-.18c-.37-.73-.553-1.53-.553-2.33V2.62c0-.1-.084-.186-.186-.186h-2.118c-.102 0-.186.084-.186.186V3.8c0 .88.46 1.7 1.2 2.18.24.16.48.33.7.53l.11.1c.42.44.77.94 1.04 1.48.16.32.3.65.41.98.05.15.1.3.15.46-.38.16-.8.29-1.25.4a28 28 0 0 1-8.54.01 10.3 10.3 0 0 1-2.924-.76c-.015-.06-.03-.12-.053-.18a6.3 6.3 0 0 0-.912-1.74A5.94 5.94 0 0 0 5.437 5.7c.725-.48 1.177-1.3 1.177-2.17V2.62c0-.102-.084-.186-.186-.186H4.31c-.103 0-.186.084-.186.186v1.1c0 .8-.184 1.6-.554 2.33-.178.29-.412.54-.656.81l-.132.15c-.563.64-1.025 1.38-1.353 2.18-.088.216-.17.44-.24.67-.84.286-1.57.85-2.073 1.58-.09.13-.13.25-.13.38v.17c0 .12.03.26.1.4 1.254 2.45 3.8 3.98 6.556 3.98.24 0 .48 0 .72-.02a14 14 0 0 0 4.195 2.02c.795.23 1.62.35 2.454.35 5.56 0 10.19-3.23 11.23-7.78a8.3 8.3 0 0 0 .584-2.82v-.12z"/></svg>
+              </div>
+              <h3>Docker Containers</h3>
+              <p>Applications are split into microservices and containerized. Compose sets up isolated networks, volume mounts, and automated restarts.</p>
+              <div class="port-badge">Backend: 5001</div>
+              <div class="port-badge">Frontend: 80</div>
+              <div class="status-pill online">ONLINE</div>
+            </div>
+            
+            <!-- Jenkins Card -->
+            <div class="devops-card" onclick="openJenkinsModal()" style="cursor: pointer;">
+              <div class="card-logo jenkins">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M12.012 0c-4.996 0-9.08 3.09-10.428 7.33l.03.018a1.218 1.218 0 0 1 .473-.34 1.17 1.17 0 0 1 .536-.086c.404.032.766.24 1 .572.247.348.334.78.243 1.205a2.535 2.535 0 0 1-.955 1.562l.066.084c.325.07.618.25.823.513a1.455 1.455 0 0 1 .238 1.127l.03.023c.31-.055.63.003.896.166.265.163.45.424.52.727l.044.02c.264-.176.586-.25.908-.21a1.474 1.474 0 0 1 1.077.747 1.408 1.408 0 0 1 .15 1.22l.04.01c.216-.275.544-.447.904-.473a1.536 1.536 0 0 1 1.233.568c.28.375.367.857.24 1.306l.04.01a1.72 1.72 0 0 1 1.235-.224c.435.097.803.376 1.01.765l.024-.002c.07-.424.316-.795.688-1.036s.83-.306 1.277-.184a1.868 1.868 0 0 1 1.3 1.34c.092.427.025.875-.19 1.25l.024.01c.14-.377.447-.665.838-.79s.823-.082 1.19.123c.365.205.617.55.698.96l.04.004c.058-.456.312-.857.705-1.11.393-.25.882-.32 1.332-.196a2.02 2.02 0 0 1 1.383 1.43c.094.417.037.852-.16 1.218 3.515-2.073 5.753-5.592 5.753-9.524C24.022 4.567 18.647 0 12.012 0zm-2.096 1.954c.268.01.53.078.766.2a1.83 1.83 0 0 1 .86 1.134c.09.336.07.696-.06 1.02l.023.003c.27-.123.58-.152.872-.08a1.51 1.51 0 0 1 1.087.892c.15.317.185.678.1 1.017l.03.013c.245-.228.58-.352.923-.34a1.442 1.442 0 0 1 1.144.757c.175.334.21.725.1 1.088l.022.013c.2-.315.534-.52.915-.557a1.545 1.545 0 0 1 1.353.676c.216.326.29.728.2 1.115l.024.01c.14-.384.444-.68.835-.81a1.72 1.72 0 0 1 1.764.443c.27.292.4.685.36 1.082l.022.008c.075-.433.33-.81.71-.1l.013.002z"/></svg>
+              </div>
+              <h3>Jenkins CI/CD</h3>
+              <p>Triggers automations on git repository push events. Executes automated checkout, build verifications, and container deployment scripts.</p>
+              <div class="port-badge">Simulator Configured</div>
+              <div class="status-pill active-blue">READY</div>
+            </div>
+            
+            <!-- Prometheus Card -->
+            <div class="devops-card" onclick="window.open('http://localhost:9090', '_blank')" style="cursor: pointer;">
+              <div class="card-logo prometheus">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.12 16.48l-1.42 1.42-3.7-3.7V9.5h2v3.88l3.12 3.1zM11.5 5.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+              </div>
+              <h3>Prometheus</h3>
+              <p>Polls `/metrics` targets every 5 seconds. Stores CPU, Memory, Request Counts, Latencies, and Active Students in a time-series database.</p>
+              <div class="port-badge">Prometheus: 9090</div>
+              <div class="status-pill online">ONLINE</div>
+            </div>
+            
+            <!-- Grafana Card -->
+            <div class="devops-card" onclick="window.open('http://localhost:3000', '_blank')" style="cursor: pointer;">
+              <div class="card-logo grafana">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.56 18.06V14.1l-2.42-1.4v2.78l2.42 1.58zm3.12 0l2.42-1.58v-2.78l-2.42 1.4v3.96zm-1.56-5.38l2.42-1.4-2.42-1.4-2.42 1.4 2.42 1.4zM12 2.62c4.07 0 7.38 3.31 7.38 7.38s-3.31 7.38-7.38 7.38-7.38-3.31-7.38-7.38 3.31-7.38 7.38-7.38z"/></svg>
+              </div>
+              <h3>Grafana Observability</h3>
+              <p>Queries Prometheus and serves rich system dashboards. Visualizes container states, response latency percentiles, and business KPI statistics.</p>
+              <div class="port-badge">Grafana: 3000</div>
+              <div class="status-pill online">ONLINE</div>
+            </div>
+          </div>
+
+          <!-- Monitoring Integration Instruction Card -->
+          <div class="devops-instruction-card">
+            <h2>Accessing Monitoring Dashboards</h2>
+            <div class="instruction-steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                  <strong>Prometheus Server</strong>
+                  <p>Visit <a href="http://localhost:9090" target="_blank">http://localhost:9090</a> to explore raw metrics and write custom PromQL queries like <code>http_requests_total</code>.</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                  <strong>Grafana Dashboard</strong>
+                  <p>Open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a> (Login: <code>admin</code> / <code>admin</code>) to view the preloaded "EduMetrics DevOps Overview" dashboard.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD STUDENT -->
+  <div class="modal" id="modal-add-student">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Student Record</h2>
+        <button class="close-btn" id="btn-close-add-modal">&times;</button>
+      </div>
+      <form id="form-add-student">
+        <div class="form-group">
+          <label for="add-name">Full Name</label>
+          <input type="text" id="add-name" required placeholder="e.g., Jane Doe">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="add-rollNumber">Roll Number</label>
+            <input type="text" id="add-rollNumber" required placeholder="e.g., CS105">
+          </div>
+          <div class="form-group">
+            <label for="add-department">Department</label>
+            <select id="add-department" required>
+              <option value="">Select Dept</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="add-marks">Marks (0-100)</label>
+            <input type="number" id="add-marks" min="0" max="100" required placeholder="e.g., 85">
+          </div>
+          <div class="form-group">
+            <label for="add-attendance">Attendance % (0-100)</label>
+            <input type="number" id="add-attendance" min="0" max="100" required placeholder="e.g., 90">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="secondary-btn" id="btn-cancel-add">Cancel</button>
+          <button type="submit" class="primary-btn">Save Details</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT STUDENT -->
+  <div class="modal" id="modal-edit-student">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Student Record</h2>
+        <button class="close-btn" id="btn-close-edit-modal">&times;</button>
+      </div>
+      <form id="form-edit-student">
+        <input type="hidden" id="edit-rollNumber-hidden">
+        <div class="form-group">
+          <label for="edit-name">Full Name</label>
+          <input type="text" id="edit-name" required placeholder="e.g., Jane Doe">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Roll Number</label>
+            <input type="text" id="edit-rollNumber-display" disabled class="disabled-input">
+          </div>
+          <div class="form-group">
+            <label for="edit-department">Department</label>
+            <select id="edit-department" required>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="edit-marks">Marks (0-100)</label>
+            <input type="number" id="edit-marks" min="0" max="100" required placeholder="e.g., 85">
+          </div>
+          <div class="form-group">
+            <label for="edit-attendance">Attendance % (0-100)</label>
+            <input type="number" id="edit-attendance" min="0" max="100" required placeholder="e.g., 90">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="secondary-btn" id="btn-cancel-edit">Cancel</button>
+          <button type="submit" class="primary-btn">Update Details</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DOCKER CONTAINER INSPECTOR -->
+  <div class="modal" id="modal-docker">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header" style="background-color: var(--bg-sidebar);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" style="color: #2496ed;"><path d="M13.983 11.078h2.119c.102 0 .186-.084.186-.186V8.774c0-.102-.084-.186-.186-.186h-2.119c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186m-2.95.078h2.118c.102 0 .185-.083.185-.186V8.852c0-.103-.083-.186-.185-.186H11.033c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m-2.95 0h2.118c.102 0 .185-.083.185-.186V8.852c0-.103-.083-.186-.185-.186H8.083c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m-2.95 0h2.119c.101 0 .185-.083.185-.186V8.852c0-.103-.084-.186-.185-.186H5.133c-.101 0-.185.083-.185.186v2.118c0 .103.084.186.185.186m2.95-2.949h2.118c.102 0 .185-.083.185-.186V5.903c0-.103-.083-.186-.185-.186H8.083c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m2.95 0h2.118c.102 0 .185-.083.185-.186V5.903c0-.103-.083-.186-.185-.186H11.033c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m2.95 0h2.119c.102 0 .186-.083.186-.186V5.903c0-.103-.084-.186-.186-.186h-2.119c-.102 0-.186.083-.186.186v2.118c0 .103.084.186.186.186m-5.9 2.949h2.118c.102 0 .185-.083.185-.186V8.774c0-.102-.083-.186-.185-.186H11.033c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186m8.85 2.95h2.118c.102 0 .186-.084.186-.186V8.774c0-.102-.084-.186-.186-.186h-2.118c-.103 0-.186.084-.186.186v2.118c0 .102.083.186.186.186M23.99 12.11c-.03-.08-.106-.17-.183-.24a14.2 14.2 0 0 0-4.049-2.73 8.35 8.35 0 0 0-.256-.77c-.328-.8-.79-1.54-1.353-2.18l-.133-.15c-.244-.27-.478-.52-.656-.81l-.105-.18c-.37-.73-.553-1.53-.553-2.33V2.62c0-.1-.084-.186-.186-.186h-2.118c-.102 0-.186.084-.186.186V3.8c0 .88.46 1.7 1.2 2.18.24.16.48.33.7.53l.11.1c.42.44.77.94 1.04 1.48.16.32.3.65.41.98.05.15.1.3.15.46-.38.16-.8.29-1.25.4a28 28 0 0 1-8.54.01 10.3 10.3 0 0 1-2.924-.76c-.015-.06-.03-.12-.053-.18a6.3 6.3 0 0 0-.912-1.74A5.94 5.94 0 0 0 5.437 5.7c.725-.48 1.177-1.3 1.177-2.17V2.62c0-.102-.084-.186-.186-.186H4.31c-.103 0-.186.084-.186.186v1.1c0 .8-.184 1.6-.554 2.33-.178.29-.412.54-.656.81l-.132.15c-.563.64-1.025 1.38-1.353 2.18-.088.216-.17.44-.24.67-.84.286-1.57.85-2.073 1.58-.09.13-.13.25-.13.38v.17c0 .12.03.26.1.4 1.254 2.45 3.8 3.98 6.556 3.98.24 0 .48 0 .72-.02a14 14 0 0 0 4.195 2.02c.795.23 1.62.35 2.454.35 5.56 0 10.19-3.23 11.23-7.78a8.3 8.3 0 0 0 .584-2.82v-.12z"/></svg>
+        </div>
+        <button class="close-btn" id="btn-close-docker-modal">&times;</button>
+      </div>
+      <div style="padding: 24px;">
+        <div style="margin-bottom: 20px; font-weight: 500; font-size: 0.9rem; color: var(--text-sub);">
+          Active services managed under `docker-compose.yml` network:
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;" id="docker-containers-list">
+          <!-- Populated in JS with mock telemetry -->
+        </div>
+
+        <div class="modal-footer" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+          <button type="button" class="secondary-btn" id="btn-docker-refresh">Refresh Telemetry</button>
+          <button type="button" class="primary-btn" id="btn-close-docker-bottom">Close Panel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: JENKINS CI/CD SIMULATOR -->
+  <div class="modal" id="modal-jenkins">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header" style="background-color: var(--bg-sidebar);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" style="color: #d23838;"><path d="M12.012 0c-4.996 0-9.08 3.09-10.428 7.33l.03.018a1.218 1.218 0 0 1 .473-.34 1.17 1.17 0 0 1 .536-.086c.404.032.766.24 1 .572.247.348.334.78.243 1.205a2.535 2.535 0 0 1-.955 1.562l.066.084c.325.07.618.25.823.513a1.455 1.455 0 0 1 .238 1.127l.03.023c.31-.055.63.003.896.166.265.163.45.424.52.727l.044.02c.264-.176.586-.25.908-.21a1.474 1.474 0 0 1 1.077.747 1.408 1.408 0 0 1 .15 1.22l.04.01c.216-.275.544-.447.904-.473a1.536 1.536 0 0 1 1.233.568c.28.375.367.857.24 1.306l.04.01a1.72 1.72 0 0 1 1.235-.224c.435.097.803.376 1.01.765l.024-.002c.07-.424.316-.795.688-1.036s.83-.306 1.277-.184a1.868 1.868 0 0 1 1.3 1.34c.092.427.025.875-.19 1.25l.024.01c.14-.377.447-.665.838-.79s.823-.082 1.19.123c.365.205.617.55.698.96l.04.004c.058-.456.312-.857.705-1.11.393-.25.882-.32 1.332-.196a2.02 2.02 0 0 1 1.383 1.43c.094.417.037.852-.16 1.218 3.515-2.073 5.753-5.592 5.753-9.524C24.022 4.567 18.647 0 12.012 0zm-2.096 1.954c.268.01.53.078.766.2a1.83 1.83 0 0 1 .86 1.134c.09.336.07.696-.06 1.02l.023.003c.27-.123.58-.152.872-.08a1.51 1.51 0 0 1 1.087.892c.15.317.185.678.1 1.017l.03.013c.245-.228.58-.352.923-.34a1.442 1.442 0 0 1 1.144.757c.175.334.21.725.1 1.088l.022.013c.2-.315.534-.52.915-.557a1.545 1.545 0 0 1 1.353.676c.216.326.29.728.2 1.115l.024.01c.14-.384.444-.68.835-.81a1.72 1.72 0 0 1 1.764.443c.27.292.4.685.36 1.082l.022.008c.075-.433.33-.81.71-.1l.013.002z"/></svg>
+          <h2 style="margin: 0; font-size: 1.2rem;">Jenkins CI/CD Automation Pipeline</h2>
+        </div>
+        <button class="close-btn" id="btn-close-jenkins-modal">&times;</button>
+      </div>
+      <div style="padding: 24px;">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-weight: 600; color: var(--text-sub);">Pipeline Status:</span>
+            <span id="jenkins-pipeline-status" style="font-weight: 700; color: var(--color-info);">IDLE</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="secondary-btn" id="btn-open-jenkins-real" style="padding: 8px 16px; border-color: HSL(10, 70%, 55%); color: HSL(10, 70%, 55%); display: flex; align-items: center; gap: 6px; font-size: 0.85rem;" onclick="window.open('http://localhost:8080', '_blank')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <span>Open Jenkins Server</span>
+            </button>
+            <button class="primary-btn" id="btn-trigger-jenkins" style="padding: 8px 16px; font-size: 0.85rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Trigger Pipeline Run</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pipeline Stage Visualizer -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 24px; position: relative;">
+          <div style="position: absolute; top: 18px; left: 10%; right: 10%; height: 4px; background-color: var(--border-color); z-index: 1;">
+            <div id="jenkins-progress-bar" style="width: 0%; height: 100%; background: var(--brand-gradient); transition: width 0.3s;"></div>
+          </div>
+          
+          <div class="jenkins-stage-step" id="step-checkout" style="z-index: 2; text-align: center; width: 22%;">
+            <div class="step-indicator-dot" id="dot-checkout" style="width: 38px; height: 38px; border-radius: 50%; background-color: var(--bg-hover); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; transition: all 0.3s;">1</div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-light);" class="step-label" id="label-checkout">Checkout</span>
+          </div>
+          
+          <div class="jenkins-stage-step" id="step-build" style="z-index: 2; text-align: center; width: 22%;">
+            <div class="step-indicator-dot" id="dot-build" style="width: 38px; height: 38px; border-radius: 50%; background-color: var(--bg-hover); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; transition: all 0.3s;">2</div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-light);" class="step-label" id="label-build">Build & Test</span>
+          </div>
+          
+          <div class="jenkins-stage-step" id="step-compile" style="z-index: 2; text-align: center; width: 22%;">
+            <div class="step-indicator-dot" id="dot-compile" style="width: 38px; height: 38px; border-radius: 50%; background-color: var(--bg-hover); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; transition: all 0.3s;">3</div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-light);" class="step-label" id="label-compile">Docker Build</span>
+          </div>
+          
+          <div class="jenkins-stage-step" id="step-deploy" style="z-index: 2; text-align: center; width: 22%;">
+            <div class="step-indicator-dot" id="dot-deploy" style="width: 38px; height: 38px; border-radius: 50%; background-color: var(--bg-hover); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: 700; transition: all 0.3s;">4</div>
+            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-light);" class="step-label" id="label-deploy">Deploy</span>
+          </div>
+        </div>
+
+        <!-- Terminal Console Logger -->
+        <div style="background-color: #0d1117; color: #39eb48; font-family: 'Courier New', Courier, monospace; padding: 16px; border-radius: 12px; height: 220px; overflow-y: auto; font-size: 0.8rem; border: 1px solid #30363d; line-height: 1.6;" id="jenkins-console-logs">
+          [System Info] Jenkins pipeline agent is idle and waiting for webhook trigger.<br>
+          [System Info] Click "Trigger Pipeline Run" to run simulated build pipeline.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Custom JS -->
+  <script src="app.js?v=5"></script>
+</body>
+</html>

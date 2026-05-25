@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Aarav Sharma",
+    "rollNumber": "CS101",
+    "department": "Computer Science",
+    "marks": 85,
+    "attendance": 92
+  },
+  {
+    "name": "Ishaan Patel",
+    "rollNumber": "CS102",
+    "department": "Computer Science",
+    "marks": 78,
+    "attendance": 88
+  },
+  {
+    "name": "Diya Iyer",
+    "rollNumber": "EC201",
+    "department": "Electronics",
+    "marks": 92,
+    "attendance": 95
+  },
+  {
+    "name": "Ananya Sen",
+    "rollNumber": "EC202",
+    "department": "Electronics",
+    "marks": 64,
+    "attendance": 76
+  },
+  {
+    "name": "Kabir Singh",
+    "rollNumber": "ME301",
+    "department": "Mechanical",
+    "marks": 72,
+    "attendance": 84
+  },
+  {
+    "name": "Riya Verma",
+    "rollNumber": "IT401",
+    "department": "Information Technology",
+    "marks": 89,
+    "attendance": 90
+  }
+]

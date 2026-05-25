@@ -1,0 +1,264 @@
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const client = require('prom-client');
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Enable CORS and JSON body parsing
+app.use(cors());
+app.use(express.json());
+
+// Database configuration
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+const DATA_FILE = path.join(DATA_DIR, 'students.json');
+
+// Ensure data directory and file exist
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(DATA_FILE)) {
+  const initialData = [
+    { name: "Aarav Sharma", rollNumber: "CS101", department: "Computer Science", marks: 85, attendance: 92 },
+    { name: "Ishaan Patel", rollNumber: "CS102", department: "Computer Science", marks: 78, attendance: 88 },
+    { name: "Diya Iyer", rollNumber: "EC201", department: "Electronics", marks: 92, attendance: 95 },
+    { name: "Ananya Sen", rollNumber: "EC202", department: "Electronics", marks: 64, attendance: 76 },
+    { name: "Kabir Singh", rollNumber: "ME301", department: "Mechanical", marks: 72, attendance: 84 },
+    { name: "Riya Verma", rollNumber: "IT401", department: "Information Technology", marks: 89, attendance: 90 }
+  ];
+  fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+}
+
+// Helper to read students
+function readStudents() {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("Error reading database file:", error);
+    return [];
+  }
+}
+
+// Helper to write students
+function writeStudents(data) {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    updateBusinessMetrics(data);
+    return true;
+  } catch (error) {
+    console.error("Error writing database file:", error);
+    return false;
+  }
+}
+
+// --- PROMETHEUS METRICS CONFIGURATION ---
+
+// Enable default metrics collection (CPU, Memory, GC, etc.)
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ register: client.register });
+
+// 1. HTTP Request Counter
+const httpRequestsTotal = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests handled',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+// 2. HTTP Request Duration Histogram
+const httpRequestDurationSeconds = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5] // standard response time buckets
+});
+
+// 3. Custom Business Gauges (Excellent for showing Grafana capabilities!)
+const studentCountGauge = new client.Gauge({
+  name: 'student_count_total',
+  help: 'Total number of students in the management system'
+});
+
+const averageMarksGauge = new client.Gauge({
+  name: 'student_average_marks',
+  help: 'Average marks of all students in the system'
+});
+
+const averageAttendanceGauge = new client.Gauge({
+  name: 'student_average_attendance',
+  help: 'Average attendance percentage of all students in the system'
+});
+
+// Update the business metrics gauges
+function updateBusinessMetrics(students) {
+  studentCountGauge.set(students.length);
+  if (students.length > 0) {
+    const totalMarks = students.reduce((sum, s) => sum + Number(s.marks || 0), 0);
+    const totalAttendance = students.reduce((sum, s) => sum + Number(s.attendance || 0), 0);
+    averageMarksGauge.set(parseFloat((totalMarks / students.length).toFixed(2)));
+    averageAttendanceGauge.set(parseFloat((totalAttendance / students.length).toFixed(2)));
+  } else {
+    averageMarksGauge.set(0);
+    averageAttendanceGauge.set(0);
+  }
+}
+
+// Initialize Gauges with current data
+updateBusinessMetrics(readStudents());
+
+// Middleware to track request metrics
+app.use((req, res, next) => {
+  const start = process.hrtime();
+  
+  // Hook end function to capture response status
+  res.on('finish', () => {
+    const duration = process.hrtime(start);
+    const durationInSeconds = duration[0] + duration[1] / 1e9;
+    
+    // Normalize route path for Prometheus label (prevent path parameter pollution)
+    let route = req.baseUrl + req.path;
+    if (req.params) {
+      for (const key of Object.keys(req.params)) {
+        route = route.replace(req.params[key], `:${key}`);
+      }
+    }
+    
+    // Ensure we don't leak ID parameters in metrics
+    if (route.match(/\/api\/students\/[^\/]+/)) {
+      route = '/api/students/:rollNumber';
+    }
+
+    httpRequestsTotal.labels(req.method, route, res.statusCode).inc();
+    httpRequestDurationSeconds.labels(req.method, route, res.statusCode).observe(durationInSeconds);
+  });
+  
+  next();
+});
+
+// --- REST API ENDPOINTS ---
+
+// GET: Fetch all students
+app.get('/api/students', (req, res) => {
+  const students = readStudents();
+  // Sync gauge in case file modified externally
+  updateBusinessMetrics(students);
+  res.json(students);
+});
+
+// GET: Fetch single student by roll number
+app.get('/api/students/:rollNumber', (req, res) => {
+  const students = readStudents();
+  const student = students.find(s => s.rollNumber.toLowerCase() === req.params.rollNumber.toLowerCase());
+  
+  if (!student) {
+    return res.status(404).json({ message: `Student with roll number ${req.params.rollNumber} not found.` });
+  }
+  
+  res.json(student);
+});
+
+// POST: Add new student
+app.post('/api/students', (req, res) => {
+  const { name, rollNumber, department, marks, attendance } = req.body;
+  
+  // Basic validation
+  if (!name || !rollNumber || !department || marks === undefined || attendance === undefined) {
+    return res.status(400).json({ message: "All fields (name, rollNumber, department, marks, attendance) are required." });
+  }
+
+  const students = readStudents();
+  const exists = students.some(s => s.rollNumber.toLowerCase() === rollNumber.toLowerCase());
+  if (exists) {
+    return res.status(409).json({ message: `Student with roll number ${rollNumber} already exists.` });
+  }
+
+  const newStudent = {
+    name: name.trim(),
+    rollNumber: rollNumber.trim().toUpperCase(),
+    department: department.trim(),
+    marks: Math.max(0, Math.min(100, Number(marks))),
+    attendance: Math.max(0, Math.min(100, Number(attendance)))
+  };
+
+  students.push(newStudent);
+  if (writeStudents(students)) {
+    res.status(201).json(newStudent);
+  } else {
+    res.status(500).json({ message: "Failed to save student details." });
+  }
+});
+
+// PUT: Update student
+app.put('/api/students/:rollNumber', (req, res) => {
+  const { name, department, marks, attendance } = req.body;
+  const rollNumberParam = req.params.rollNumber;
+
+  // Validation
+  if (!name || !department || marks === undefined || attendance === undefined) {
+    return res.status(400).json({ message: "All fields (name, department, marks, attendance) are required." });
+  }
+
+  const students = readStudents();
+  const index = students.findIndex(s => s.rollNumber.toLowerCase() === rollNumberParam.toLowerCase());
+  
+  if (index === -1) {
+    return res.status(404).json({ message: `Student with roll number ${rollNumberParam} not found.` });
+  }
+
+  // Update
+  students[index] = {
+    ...students[index],
+    name: name.trim(),
+    department: department.trim(),
+    marks: Math.max(0, Math.min(100, Number(marks))),
+    attendance: Math.max(0, Math.min(100, Number(attendance)))
+  };
+
+  if (writeStudents(students)) {
+    res.json(students[index]);
+  } else {
+    res.status(500).json({ message: "Failed to update student details." });
+  }
+});
+
+// DELETE: Remove student
+app.delete('/api/students/:rollNumber', (req, res) => {
+  const rollNumberParam = req.params.rollNumber;
+  const students = readStudents();
+  const index = students.findIndex(s => s.rollNumber.toLowerCase() === rollNumberParam.toLowerCase());
+
+  if (index === -1) {
+    return res.status(404).json({ message: `Student with roll number ${rollNumberParam} not found.` });
+  }
+
+  const deletedStudent = students.splice(index, 1)[0];
+
+  if (writeStudents(students)) {
+    res.json({ message: `Student ${deletedStudent.name} (Roll No: ${deletedStudent.rollNumber}) deleted successfully.` });
+  } else {
+    res.status(500).json({ message: "Failed to delete student." });
+  }
+});
+
+// --- METRICS SCRAPING ENDPOINT ---
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', client.register.contentType);
+    res.end(await client.register.metrics());
+  } catch (ex) {
+    res.status(500).end(ex);
+  }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: "UP", timestamp: new Date() });
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Backend Server running on port ${PORT}`);
+  console.log(`Prometheus metrics available at http://localhost:${PORT}/metrics`);
+});
