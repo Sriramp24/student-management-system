@@ -303,9 +303,14 @@ app.post('/api/jenkins/trigger', async (req, res) => {
   <disabled>false</disabled>
 </flow-definition>`;
 
+    let nextBuildNumber = 1;
     let jobCheck;
     try {
       jobCheck = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/api/json`);
+      if (jobCheck.ok) {
+        const jobData = await jobCheck.clone().json();
+        nextBuildNumber = jobData.nextBuildNumber || 1;
+      }
     } catch (e) {
       throw new Error(`Cannot connect to local Jenkins server at ${jenkinsBaseUrl}. Ensure Jenkins is running.`);
     }
@@ -363,7 +368,11 @@ app.post('/api/jenkins/trigger', async (req, res) => {
     }
 
     console.log(`Jenkins build for '${jobName}' triggered successfully!`);
-    return res.json({ status: "SUCCESS", message: "Real Jenkins pipeline trigger fired successfully!" });
+    return res.json({ 
+      status: "SUCCESS", 
+      message: "Real Jenkins pipeline trigger fired successfully!",
+      buildNumber: nextBuildNumber
+    });
 
   } catch (error) {
     console.error("Jenkins API Trigger error:", error.message);
@@ -379,14 +388,17 @@ app.get('/api/jenkins/logs', async (req, res) => {
   const jenkinsHost = process.env.NODE_ENV === 'production' ? 'host.docker.internal' : 'localhost';
   const jenkinsBaseUrl = `http://${jenkinsHost}:8080`;
   const encodedJobName = 'student%20dashboard';
+  
+  // Retrieve specific build number from query parameter
+  const buildNumber = req.query.build || 'lastBuild';
 
   try {
-    const logsRes = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/lastBuild/consoleText`);
+    const logsRes = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/${buildNumber}/consoleText`);
     
     if (logsRes.status === 404) {
       return res.json({ 
         status: "WAITING", 
-        logs: "[Jenkins API] Build is initiating... Waiting for console output to be registered." 
+        logs: `[Jenkins API] Build #${buildNumber} is initiating... Waiting for console output to be registered.` 
       });
     }
 

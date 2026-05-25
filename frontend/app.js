@@ -770,12 +770,13 @@ btnTriggerJenkins.addEventListener('click', async () => {
     const result = await response.json();
     
     if (response.ok) {
-      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-success)">[Jenkins API] Fired build trigger for "student dashboard" successfully!</span><br>`;
+      const bNum = result.buildNumber || 'lastBuild';
+      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-success)">[Jenkins API] Fired build trigger for "student dashboard" (Build #${bNum}) successfully!</span><br>`;
       jenkinsConsoleLogs.innerHTML += `[Jenkins API] Streaming real-time console output from Jenkins server...<br>`;
-      showToast("Real Jenkins Pipeline Build Triggered!", "success");
+      showToast(`Real Jenkins Pipeline Build #${bNum} Triggered!`, "success");
       
       // Start real polling
-      startRealLogsPolling();
+      startRealLogsPolling(bNum);
     } else {
       jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Jenkins Server down or returned error: ${result.message || 'Details not available'}.</span><br>`;
       jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running local build pipeline simulation fallback...<br>`;
@@ -793,15 +794,16 @@ btnTriggerJenkins.addEventListener('click', async () => {
   }
 });
 
-function startRealLogsPolling() {
+function startRealLogsPolling(buildNumber) {
   if (realPollingInterval) clearInterval(realPollingInterval);
   
   let pollingAttempts = 0;
+  const targetBuild = buildNumber || 'lastBuild';
   
   realPollingInterval = setInterval(async () => {
     try {
       pollingAttempts++;
-      const res = await fetch(`${API_BASE_URL}/jenkins/logs`);
+      const res = await fetch(`${API_BASE_URL}/jenkins/logs?build=${targetBuild}`);
       if (!res.ok) throw new Error("Failed to fetch logs");
       
       const data = await res.json();
@@ -861,7 +863,7 @@ function startRealLogsPolling() {
         btnTriggerJenkins.style.opacity = '1';
         jenkinsPipelineStatus.textContent = 'SUCCESS';
         jenkinsPipelineStatus.style.color = 'var(--color-success)';
-        showToast("Real Jenkins Pipeline Build Succeeded!", "success");
+        showToast(`Real Jenkins Pipeline Build #${targetBuild} Succeeded!`, "success");
       } else if (data.status === "FAILED") {
         clearInterval(realPollingInterval);
         jenkinsPipelineRunning = false;
@@ -869,7 +871,7 @@ function startRealLogsPolling() {
         btnTriggerJenkins.style.opacity = '1';
         jenkinsPipelineStatus.textContent = 'FAILED';
         jenkinsPipelineStatus.style.color = 'var(--color-danger)';
-        showToast("Real Jenkins Pipeline Build Failed!", "error");
+        showToast(`Real Jenkins Pipeline Build #${targetBuild} Failed!`, "error");
       }
     } catch (e) {
       console.error("Logs polling failed:", e);
