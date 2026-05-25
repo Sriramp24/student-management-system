@@ -253,12 +253,19 @@ app.post('/api/jenkins/trigger', async (req, res) => {
   try {
     // 1. Fetch CSRF Crumb if enabled
     let crumbHeader = {};
+    let cookieHeader = {};
     try {
       const crumbRes = await fetch(`${jenkinsBaseUrl}/crumbIssuer/api/json`);
       if (crumbRes.ok) {
         const crumbData = await crumbRes.json();
         crumbHeader = { [crumbData.crumbRequestField]: crumbData.crumb };
-        console.log("Jenkins Crumb fetched successfully:", crumbData.crumb);
+        
+        // Extract Set-Cookie header so the crumb matches the session
+        const setCookie = crumbRes.headers.get('set-cookie');
+        if (setCookie) {
+          cookieHeader = { 'Cookie': setCookie.split(';')[0] };
+        }
+        console.log("Jenkins Crumb fetched successfully:", crumbData.crumb, "Cookie:", setCookie);
       }
     } catch (e) {
       console.log("Jenkins Crumb Issuer not accessible or CSRF disabled, proceeding without crumb token...");
@@ -306,7 +313,11 @@ app.post('/api/jenkins/trigger', async (req, res) => {
     let nextBuildNumber = 1;
     let jobCheck;
     try {
-      jobCheck = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/api/json`);
+      jobCheck = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/api/json`, {
+        headers: {
+          ...cookieHeader
+        }
+      });
       if (jobCheck.ok) {
         const jobData = await jobCheck.clone().json();
         nextBuildNumber = jobData.nextBuildNumber || 1;
@@ -323,7 +334,8 @@ app.post('/api/jenkins/trigger', async (req, res) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/xml',
-          ...crumbHeader
+          ...crumbHeader,
+          ...cookieHeader
         },
         body: configXml
       });
@@ -341,7 +353,8 @@ app.post('/api/jenkins/trigger', async (req, res) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/xml',
-          ...crumbHeader
+          ...crumbHeader,
+          ...cookieHeader
         },
         body: configXml
       });
@@ -358,7 +371,8 @@ app.post('/api/jenkins/trigger', async (req, res) => {
     const triggerRes = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/build`, {
       method: 'POST',
       headers: {
-        ...crumbHeader
+        ...crumbHeader,
+        ...cookieHeader
       }
     });
 
