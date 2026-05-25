@@ -264,19 +264,12 @@ app.post('/api/jenkins/trigger', async (req, res) => {
       console.log("Jenkins Crumb Issuer not accessible or CSRF disabled, proceeding without crumb token...");
     }
 
-    // 2. Check if job student-management-system exists
-    let jobCheck;
-    try {
-      jobCheck = await fetch(`${jenkinsBaseUrl}/job/student-management-system/api/json`);
-    } catch (e) {
-      throw new Error(`Cannot connect to local Jenkins server at ${jenkinsBaseUrl}. Ensure Jenkins is running.`);
-    }
+    // 2. Check if job student dashboard exists
+    const jobName = 'student dashboard';
+    const encodedJobName = 'student%20dashboard';
     
-    if (jobCheck.status === 404) {
-      console.log("Job 'student-management-system' not found in Jenkins registry. Creating it programmatically...");
-      
-      // Configuration XML for Jenkins Pipeline job
-      const configXml = `<?xml version='1.1' encoding='UTF-8'?>
+    // Configuration XML for Jenkins Pipeline job
+    const configXml = `<?xml version='1.1' encoding='UTF-8'?>
 <flow-definition>
   <description>Student Management System CI/CD Pipeline</description>
   <keepDependencies>false</keepDependencies>
@@ -293,7 +286,7 @@ app.post('/api/jenkins/trigger', async (req, res) => {
         <hudson.plugins.git.BranchSpec>
           <name>*/master</name>
         </hudson.plugins.git.BranchSpec>
-      </scm>
+      </branches>
       <scriptPath>Jenkinsfile</scriptPath>
       <lightweight>true</lightweight>
     </definition>
@@ -306,8 +299,18 @@ app.post('/api/jenkins/trigger', async (req, res) => {
     <disabled>false</disabled>
   </flow-definition>`;
 
+    let jobCheck;
+    try {
+      jobCheck = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/api/json`);
+    } catch (e) {
+      throw new Error(`Cannot connect to local Jenkins server at ${jenkinsBaseUrl}. Ensure Jenkins is running.`);
+    }
+    
+    if (jobCheck.status === 404) {
+      console.log(`Job '${jobName}' not found in Jenkins registry. Creating it programmatically...`);
+      
       // Create the item
-      const createRes = await fetch(`${jenkinsBaseUrl}/createItem?name=student-management-system`, {
+      const createRes = await fetch(`${jenkinsBaseUrl}/createItem?name=${encodedJobName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/xml',
@@ -320,11 +323,30 @@ app.post('/api/jenkins/trigger', async (req, res) => {
         const errText = await createRes.text();
         throw new Error(`Failed to create Jenkins job: ${errText}`);
       }
-      console.log("Jenkins job 'student-management-system' created successfully!");
+      console.log(`Jenkins job '${jobName}' created successfully!`);
+    } else {
+      console.log(`Job '${jobName}' already exists. Overwriting configuration to ensure CI/CD is fully integrated...`);
+      
+      // Update config of existing job
+      const updateRes = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/config.xml`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/xml',
+          ...crumbHeader
+        },
+        body: configXml
+      });
+
+      if (!updateRes.ok) {
+        const errText = await updateRes.text();
+        throw new Error(`Failed to update Jenkins job configuration: ${errText}`);
+      }
+      console.log(`Jenkins job '${jobName}' configuration fully automated and updated!`);
     }
 
     // 3. Trigger the build
-    const triggerRes = await fetch(`${jenkinsBaseUrl}/job/student-management-system/build`, {
+    console.log(`Triggering real build for '${jobName}'...`);
+    const triggerRes = await fetch(`${jenkinsBaseUrl}/job/${encodedJobName}/build`, {
       method: 'POST',
       headers: {
         ...crumbHeader
@@ -336,7 +358,7 @@ app.post('/api/jenkins/trigger', async (req, res) => {
       throw new Error(`Failed to trigger Jenkins build: ${errText}`);
     }
 
-    console.log("Jenkins build triggered successfully!");
+    console.log(`Jenkins build for '${jobName}' triggered successfully!`);
     return res.json({ status: "SUCCESS", message: "Real Jenkins pipeline trigger fired successfully!" });
 
   } catch (error) {
