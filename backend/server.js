@@ -242,6 +242,107 @@ app.delete('/api/students/:rollNumber', (req, res) => {
   }
 });
 
+// --- REAL JENKINS CI/CD INTEGRATION ENDPOINT ---
+app.post('/api/jenkins/trigger', async (req, res) => {
+  // Use host.docker.internal when inside Docker to route to the host's localhost:8080
+  const jenkinsHost = process.env.NODE_ENV === 'production' ? 'host.docker.internal' : 'localhost';
+  const jenkinsBaseUrl = `http://${jenkinsHost}:8080`;
+  
+  console.log(`Jenkins target server URL: ${jenkinsBaseUrl}`);
+
+  try {
+    // 1. Fetch CSRF Crumb if enabled
+    let crumbHeader = {};
+    try {
+      const crumbRes = await fetch(`${jenkinsBaseUrl}/crumbIssuer/api/json`);
+      if (crumbRes.ok) {
+        const crumbData = await crumbRes.json();
+        crumbHeader = { [crumbData.crumbRequestField]: crumbData.crumb };
+        console.log("Jenkins Crumb fetched successfully:", crumbData.crumb);
+      }
+    } catch (e) {
+      console.log("Jenkins Crumb Issuer not accessible or CSRF disabled, proceeding without crumb token...");
+    }
+
+    // 2. Check if job edumetrics-pipeline exists
+    let jobCheck;
+    try {
+      jobCheck = await fetch(`${jenkinsBaseUrl}/job/edumetrics-pipeline/api/json`);
+    } catch (e) {
+      throw new Error(`Cannot connect to local Jenkins server at ${jenkinsBaseUrl}. Ensure Jenkins is running.`);
+    }
+    
+    if (jobCheck.status === 404) {
+      console.log("Job 'edumetrics-pipeline' not found in Jenkins registry. Creating it programmatically...");
+      
+      // Configuration XML for Jenkins Pipeline job
+      const configXml = `<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition>
+  <description>EduMetrics Student Management CI/CD Pipeline</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition">
+    <scm class="hudson.plugins.git.GitSCM">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <url>/Users/srirampendem/.gemini/antigravity/scratch/student-management-system</url>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec>
+          <name>*/main</name>
+        </hudson.plugins.git.BranchSpec>
+      </scm>
+      <scriptPath>Jenkinsfile</scriptPath>
+      <lightweight>true</lightweight>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+  </flow-definition>`;
+
+      // Create the item
+      const createRes = await fetch(`${jenkinsBaseUrl}/createItem?name=edumetrics-pipeline`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/xml',
+          ...crumbHeader
+        },
+        body: configXml
+      });
+
+      if (!createRes.ok) {
+        const errText = await createRes.text();
+        throw new Error(`Failed to create Jenkins job: ${errText}`);
+      }
+      console.log("Jenkins job 'edumetrics-pipeline' created successfully!");
+    }
+
+    // 3. Trigger the build
+    const triggerRes = await fetch(`${jenkinsBaseUrl}/job/edumetrics-pipeline/build`, {
+      method: 'POST',
+      headers: {
+        ...crumbHeader
+      }
+    });
+
+    if (!triggerRes.ok && triggerRes.status !== 201) {
+      const errText = await triggerRes.text();
+      throw new Error(`Failed to trigger Jenkins build: ${errText}`);
+    }
+
+    console.log("Jenkins build triggered successfully!");
+    return res.json({ status: "SUCCESS", message: "Real Jenkins pipeline trigger fired successfully!" });
+
+  } catch (error) {
+    console.error("Jenkins API Trigger error:", error.message);
+    return res.status(500).json({ 
+      status: "FAILED", 
+      message: `Failed to trigger real Jenkins build: ${error.message}. Ensure Jenkins is active at http://localhost:8080.` 
+    });
+  }
+});
+
 // --- METRICS SCRAPING ENDPOINT ---
 app.get('/metrics', async (req, res) => {
   try {

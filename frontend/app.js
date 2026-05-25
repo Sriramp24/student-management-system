@@ -736,7 +736,7 @@ const jenkinsConsoleLogs = document.getElementById('jenkins-console-logs');
 const jenkinsProgressBar = document.getElementById('jenkins-progress-bar');
 const jenkinsPipelineStatus = document.getElementById('jenkins-pipeline-status');
 
-btnTriggerJenkins.addEventListener('click', () => {
+btnTriggerJenkins.addEventListener('click', async () => {
   if (jenkinsPipelineRunning) {
     showToast("A pipeline run is already in progress!", "error");
     return;
@@ -761,7 +761,26 @@ btnTriggerJenkins.addEventListener('click', () => {
   jenkinsProgressBar.style.width = '0%';
   jenkinsPipelineStatus.textContent = 'RUNNING';
   jenkinsPipelineStatus.style.color = 'var(--color-warning)';
-  jenkinsConsoleLogs.innerHTML = '[Jenkins Pipeline Agent] Initializing build environment...<br>';
+  jenkinsConsoleLogs.innerHTML = '[Jenkins Pipeline Agent] Contacting Jenkins orchestrator...<br>';
+  
+  // 1. Call backend API to trigger real Jenkins build
+  try {
+    jenkinsConsoleLogs.innerHTML += '[Jenkins API] POST /api/jenkins/trigger - Connecting to http://localhost:8080...<br>';
+    const response = await fetch(`${API_BASE_URL}/jenkins/trigger`, { method: 'POST' });
+    const result = await response.json();
+    
+    if (response.ok) {
+      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-success)">[Jenkins API] Fired build trigger for "edumetrics-pipeline" successfully!</span><br>`;
+      showToast("Real Jenkins Pipeline Build Triggered!", "success");
+    } else {
+      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Jenkins Server down or returned error: ${result.message || 'Details not available'}.</span><br>`;
+      jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running high-fidelity local build runner simulation fallback...<br>`;
+    }
+  } catch (err) {
+    console.error("Jenkins trigger call failed:", err);
+    jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Unreachable. local-mac-agent offline.</span><br>`;
+    jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running local build pipeline simulation fallback...<br>`;
+  }
   
   jenkinsLogIndex = 0;
   runNextPipelineStep();
