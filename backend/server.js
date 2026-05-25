@@ -264,21 +264,21 @@ app.post('/api/jenkins/trigger', async (req, res) => {
       console.log("Jenkins Crumb Issuer not accessible or CSRF disabled, proceeding without crumb token...");
     }
 
-    // 2. Check if job edumetrics-pipeline exists
+    // 2. Check if job student-management-system exists
     let jobCheck;
     try {
-      jobCheck = await fetch(`${jenkinsBaseUrl}/job/edumetrics-pipeline/api/json`);
+      jobCheck = await fetch(`${jenkinsBaseUrl}/job/student-management-system/api/json`);
     } catch (e) {
       throw new Error(`Cannot connect to local Jenkins server at ${jenkinsBaseUrl}. Ensure Jenkins is running.`);
     }
     
     if (jobCheck.status === 404) {
-      console.log("Job 'edumetrics-pipeline' not found in Jenkins registry. Creating it programmatically...");
+      console.log("Job 'student-management-system' not found in Jenkins registry. Creating it programmatically...");
       
       // Configuration XML for Jenkins Pipeline job
       const configXml = `<?xml version='1.1' encoding='UTF-8'?>
 <flow-definition>
-  <description>EduMetrics Student Management CI/CD Pipeline</description>
+  <description>Student Management System CI/CD Pipeline</description>
   <keepDependencies>false</keepDependencies>
   <properties/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition">
@@ -286,23 +286,28 @@ app.post('/api/jenkins/trigger', async (req, res) => {
       <configVersion>2</configVersion>
       <userRemoteConfigs>
         <hudson.plugins.git.UserRemoteConfig>
-          <url>/Users/srirampendem/.gemini/antigravity/scratch/student-management-system</url>
+          <url>https://github.com/Sriramp24/student-management-system.git</url>
         </hudson.plugins.git.UserRemoteConfig>
       </userRemoteConfigs>
       <branches>
         <hudson.plugins.git.BranchSpec>
-          <name>*/main</name>
+          <name>*/master</name>
         </hudson.plugins.git.BranchSpec>
       </scm>
       <scriptPath>Jenkinsfile</scriptPath>
       <lightweight>true</lightweight>
     </definition>
-    <triggers/>
+    <triggers>
+      <hudson.triggers.SCMTrigger>
+        <spec>* * * * *</spec>
+        <ignorePostCommitHooks>false</ignorePostCommitHooks>
+      </hudson.triggers.SCMTrigger>
+    </triggers>
     <disabled>false</disabled>
   </flow-definition>`;
 
       // Create the item
-      const createRes = await fetch(`${jenkinsBaseUrl}/createItem?name=edumetrics-pipeline`, {
+      const createRes = await fetch(`${jenkinsBaseUrl}/createItem?name=student-management-system`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/xml',
@@ -315,11 +320,11 @@ app.post('/api/jenkins/trigger', async (req, res) => {
         const errText = await createRes.text();
         throw new Error(`Failed to create Jenkins job: ${errText}`);
       }
-      console.log("Jenkins job 'edumetrics-pipeline' created successfully!");
+      console.log("Jenkins job 'student-management-system' created successfully!");
     }
 
     // 3. Trigger the build
-    const triggerRes = await fetch(`${jenkinsBaseUrl}/job/edumetrics-pipeline/build`, {
+    const triggerRes = await fetch(`${jenkinsBaseUrl}/job/student-management-system/build`, {
       method: 'POST',
       headers: {
         ...crumbHeader

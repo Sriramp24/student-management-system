@@ -770,7 +770,7 @@ btnTriggerJenkins.addEventListener('click', async () => {
     const result = await response.json();
     
     if (response.ok) {
-      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-success)">[Jenkins API] Fired build trigger for "edumetrics-pipeline" successfully!</span><br>`;
+      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-success)">[Jenkins API] Fired build trigger for "student-management-system" successfully!</span><br>`;
       showToast("Real Jenkins Pipeline Build Triggered!", "success");
     } else {
       jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Jenkins Server down or returned error: ${result.message || 'Details not available'}.</span><br>`;
