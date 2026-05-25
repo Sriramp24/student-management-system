@@ -1,8 +1,6 @@
 // EduMetrics Student Management Dashboard Application Logic
 
-const API_BASE_URL = window.location.origin.includes('localhost') 
-  ? 'http://localhost:5001/api'
-  : '/api'; // fallback to relative URL (proxied by Nginx in production)
+const API_BASE_URL = '/api';
 
 // Global State
 let studentsList = [];
@@ -778,19 +776,25 @@ btnTriggerJenkins.addEventListener('click', async () => {
       // Start real polling
       startRealLogsPolling(bNum);
     } else {
-      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Jenkins Server down or returned error: ${result.message || 'Details not available'}.</span><br>`;
-      jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running local build pipeline simulation fallback...<br>`;
-      // Fallback
-      jenkinsLogIndex = 0;
-      runNextPipelineStep();
+      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-danger); font-weight: bold;">[Jenkins API] ERROR: ${result.message || 'Server returned an error.'}</span><br>`;
+      jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-danger)">[Jenkins API] Pipeline execution halted.</span><br>`;
+      jenkinsPipelineStatus.textContent = 'FAILED';
+      jenkinsPipelineStatus.style.color = 'var(--color-danger)';
+      jenkinsPipelineRunning = false;
+      btnTriggerJenkins.disabled = false;
+      btnTriggerJenkins.style.opacity = '1';
+      showToast("Jenkins Pipeline Trigger Failed!", "error");
     }
   } catch (err) {
     console.error("Jenkins trigger call failed:", err);
-    jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-warning)">[Jenkins API] Unreachable. local-mac-agent offline.</span><br>`;
-    jenkinsConsoleLogs.innerHTML += `[Jenkins API] Running local build pipeline simulation fallback...<br>`;
-    // Fallback
-    jenkinsLogIndex = 0;
-    runNextPipelineStep();
+    jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-danger); font-weight: bold;">[Jenkins API] ERROR: Connection failed. Jenkins server is unreachable.</span><br>`;
+    jenkinsConsoleLogs.innerHTML += `<span style="color: var(--color-danger)">[Jenkins API] Make sure Jenkins is running locally at http://localhost:8080.</span><br>`;
+    jenkinsPipelineStatus.textContent = 'FAILED';
+    jenkinsPipelineStatus.style.color = 'var(--color-danger)';
+    jenkinsPipelineRunning = false;
+    btnTriggerJenkins.disabled = false;
+    btnTriggerJenkins.style.opacity = '1';
+    showToast("Jenkins Connection Error!", "error");
   }
 });
 
