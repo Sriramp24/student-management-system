@@ -81,10 +81,5 @@ pipeline {
             echo '=========================================!'
             echo 'CI/CD PIPELINE FAILED! Rolling back...'
             echo '=========================================!'
-        }
-        always {
-            echo 'Cleaning workspace build artifacts...'
-            cleanWs()
-        }
     }
 }
