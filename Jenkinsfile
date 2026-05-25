@@ -66,7 +66,7 @@ pipeline {
                 echo 'EduMetrics DevOps Stack deployed successfully!'
                 echo 'Access Frontend: http://localhost:80'
                 echo 'Access Prometheus: http://localhost:9090'
-                echo 'Access Grafana: http://localhost:3000 (admin/admin)'
+                echo 'Access Grafana: http://localhost:3000/d/a9f63ce2-65ba-43ea-be27-c83f1cf89ef9/edumetrics-devops-overview (admin/admin)'
             }
         }
     }

@@ -710,7 +710,7 @@ const pipelineLogs = [
   { text: '<span style="color: var(--color-success); font-weight: 700;">CI/CD PIPELINE RUN SUCCESSFUL! STACK IS ONLINE!</span>', delay: 100 },
   { text: 'Access Frontend Client: http://localhost:80', delay: 50 },
   { text: 'Access Prometheus:      http://localhost:9090', delay: 50 },
-  { text: 'Access Grafana Dashboard: http://localhost:3000', delay: 50 },
+  { text: 'Access Grafana Dashboard: http://localhost:3000/d/a9f63ce2-65ba-43ea-be27-c83f1cf89ef9/edumetrics-devops-overview', delay: 50 },
   { text: '==================================================', delay: 50, pipelineFinished: true }
 ];
 
