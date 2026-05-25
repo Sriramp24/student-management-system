@@ -52,8 +52,10 @@ pipeline {
             steps {
                 echo 'Deploying application stack using Docker Compose...'
                 // Restarting containers with newly built local images
-                sh 'docker-compose down'
-                sh 'docker-compose up -d'
+                sh 'docker-compose down || true'
+		sh 'docker rm -f edumetrics-backend || true'
+		sh 'docker rm -f edumetrics-frontend || true'
+		sh 'docker-compose up -d'
                 
                 echo 'Testing deployed microservices health status...'
                 // A quick sleep to wait for container boot, then curl health check
